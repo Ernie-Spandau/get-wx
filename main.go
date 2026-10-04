@@ -93,39 +93,51 @@ func main() {
 
 		fmt.Printf("Weather for %.4f, %.4f\n", latitude, longitude)
 	}
-	wx, err := getWeather(latitude, longitude)
+	weather, err := getWeather(latitude, longitude)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	wx := convertWeather(weather)
 	displayWeather(wx)
 }
 
-func getWeather(latitude, longitude float64) (Weather, error) {
+func getWeather(latitude, longitude float64) (WeatherResponse, error) {
+
 	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", latitude, longitude)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return Weather{}, fmt.Errorf("request failed %w", err)
+		return WeatherResponse{}, fmt.Errorf("request failed %w", err)
 	}
 
 	request.Header.Set("User-Agent", contactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return Weather{}, fmt.Errorf("response failed: %w", err)
+		return WeatherResponse{}, fmt.Errorf("response failed: %w", err)
 	}
 
 	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return WeatherResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
+	}
+
 	var weather WeatherResponse
 	decoder := json.NewDecoder(response.Body)
 	err = decoder.Decode(&weather)
 	if err != nil {
-		return Weather{}, fmt.Errorf("failed to decode weather data: %w", err)
+		return WeatherResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
 	}
 	if len(weather.Properties.Timeseries) == 0 {
-		return Weather{}, fmt.Errorf("no forecast data returned")
+		return WeatherResponse{}, fmt.Errorf("no forecast data returned")
 	}
 
-	wxData := weather.Properties.Timeseries[0].Data.Instant.Details
+	return weather, nil
+}
+
+func convertWeather(weatherResponse WeatherResponse) Weather {
+
+	wxData := weatherResponse.Properties.Timeseries[0].Data.Instant.Details
 
 	wx := Weather{
 		Temperature:   wxData.AirTemperature,
@@ -137,8 +149,7 @@ func getWeather(latitude, longitude float64) (Weather, error) {
 		Humidity:      int(math.Round(wxData.Humidity)),
 		SkyCondition:  int(math.Round(wxData.CloudArea)),
 	}
-
-	return wx, nil
+	return wx
 }
 
 func getCoordinates(location string) (float64, float64, error) {
@@ -160,6 +171,10 @@ func getCoordinates(location string) (float64, float64, error) {
 	}
 
 	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return 0.0, 0.0, fmt.Errorf("server returned HTTP status: %s", response.Status)
+	}
 
 	var results []LocationResult
 	decoder := json.NewDecoder(response.Body)

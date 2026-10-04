@@ -47,6 +47,17 @@ type WeatherResponse struct {
 	Properties Properties `json:"properties"`
 }
 
+type Weather struct {
+	Temperature   float64
+	TemperatureF  float64
+	Pressure      float64
+	PressureInHg  float64
+	WindDirection int
+	WindSpeed     float64
+	Humidity      int
+	SkyCondition  int
+}
+
 func main() {
 	location := flag.String("l", "", "location for weather")
 	coordinates := flag.String("c", "", "coordinates as lattitude, longitude")
@@ -64,11 +75,11 @@ func main() {
 	if *location != "" {
 		latitude, longitude, err = getCoordinates(*location)
 		if err != nil {
-			fmt.Println("Failed to find location")
+			fmt.Printf("Failed to find location: %v\n", err)
 			return
 		}
 
-		fmt.Println("Weather for", *location)
+		fmt.Printf("Weather for %s (%.4f, %.4f)\n", *location, latitude, longitude)
 
 	} else {
 
@@ -79,42 +90,49 @@ func main() {
 		}
 
 		latitude, err = strconv.ParseFloat(parts[0], 64)
-		if err != nil || math.IsNaN(latitude) || math.IsInf(latitude, 0) {
+		if err != nil {
 			fmt.Println("Invalid latitude")
-			return
-		}
-		if latitude < -90 || latitude > 90 {
-			fmt.Println("Latitude out of limits (-90° - 90°)")
 			return
 		}
 
 		longitude, err = strconv.ParseFloat(parts[1], 64)
-		if err != nil || math.IsNaN(longitude) || math.IsInf(longitude, 0) {
+		if err != nil {
 			fmt.Println("Invalid longitude")
 			return
 		}
-		if longitude < -180 || longitude > 180 {
-			fmt.Println("Longitude out of limits (-180° - 180°)")
+
+		err = validateCoordinates(latitude, longitude)
+		if err != nil {
+			fmt.Println(err)
 			return
 		}
+
 		fmt.Printf("Weather for %.4f, %.4f\n", latitude, longitude)
 	}
-	getWeather(latitude, longitude)
+	wx, err := getWeather(latitude, longitude)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", wx.Temperature, wx.TemperatureF)
+	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", wx.Pressure, wx.PressureInHg)
+	fmt.Printf("Current wind direction is: %v°\n", wx.WindDirection)
+	fmt.Println("Current wind speed is:", wx.WindSpeed)
+	fmt.Printf("Current humidity is: %d%%\n", wx.Humidity)
+	fmt.Printf("Current sky condition is %d%% cloudy\n", wx.SkyCondition)
 }
 
-func getWeather(latitude, longitude float64) {
+func getWeather(latitude, longitude float64) (Weather, error) {
 	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", latitude, longitude)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Request failed")
-		return
+		return Weather{}, fmt.Errorf("request failed %w", err)
 	}
 
 	request.Header.Set("User-Agent", contactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		fmt.Println("Response failed")
-		return
+		return Weather{}, fmt.Errorf("response failed: %w", err)
 	}
 
 	defer response.Body.Close()
@@ -122,29 +140,26 @@ func getWeather(latitude, longitude float64) {
 	decoder := json.NewDecoder(response.Body)
 	err = decoder.Decode(&weather)
 	if err != nil {
-		fmt.Println("Failed to decode weather data")
-		return
+		return Weather{}, fmt.Errorf("failed to decode weather data: %w", err)
 	}
 	if len(weather.Properties.Timeseries) == 0 {
-		fmt.Println("No forecast data returned")
-		return
+		return Weather{}, fmt.Errorf("no forecast data returned")
 	}
 
 	wxData := weather.Properties.Timeseries[0].Data.Instant.Details
-	temperature := wxData.AirTemperature
-	temperatureF := (temperature * 9.0 / 5.0) + 32
-	pressure := wxData.AirPressure
-	pressureInHg := pressure * 0.02953
-	windDirection := int(math.Round(wxData.WindDirection))
-	windspeed := wxData.WindSpeed
-	humidity := int(math.Round(wxData.Humidity))
-	skyCondition := wxData.CloudArea
-	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", temperature, temperatureF)
-	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", pressure, pressureInHg)
-	fmt.Printf("Current wind direction is: %v°\n", windDirection)
-	fmt.Println("Current wind speed is:", windspeed)
-	fmt.Printf("Current humidity is: %d%%\n", humidity)
-	fmt.Printf("Current sky condition is %.0f%% cloudy", skyCondition)
+
+	wx := Weather{
+		Temperature:   wxData.AirTemperature,
+		TemperatureF:  (wxData.AirTemperature * 9.0 / 5.0) + 32,
+		Pressure:      wxData.AirPressure,
+		PressureInHg:  wxData.AirPressure * 0.02953,
+		WindDirection: int(math.Round(wxData.WindDirection)),
+		WindSpeed:     wxData.WindSpeed,
+		Humidity:      int(math.Round(wxData.Humidity)),
+		SkyCondition:  int(math.Round(wxData.CloudArea)),
+	}
+
+	return wx, nil
 }
 
 func getCoordinates(location string) (float64, float64, error) {
@@ -156,15 +171,13 @@ func getCoordinates(location string) (float64, float64, error) {
 	requestURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
 	request, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
-		fmt.Println("Request failed")
-		return 0.0, 0.0, err
+		return 0.0, 0.0, fmt.Errorf("request failed: %w", err)
 	}
 
 	request.Header.Set("User-Agent", contactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		fmt.Println("Response failed")
-		return 0.0, 0.0, err
+		return 0.0, 0.0, fmt.Errorf("response failed: %w", err)
 	}
 
 	defer response.Body.Close()
@@ -174,33 +187,43 @@ func getCoordinates(location string) (float64, float64, error) {
 	err = decoder.Decode(&results)
 
 	if err != nil {
-		fmt.Println("Failed to decode location data")
-		return 0.0, 0.0, err
+		return 0.0, 0.0, fmt.Errorf("failed to decode location data: %w", err)
 	}
+
 	if len(results) == 0 {
-		fmt.Println("No location data returned")
-		return 0.0, 0.0, fmt.Errorf("No location data returned")
+		return 0.0, 0.0, fmt.Errorf("no location data returned")
 	}
 
 	latitude, err := strconv.ParseFloat(results[0].Latitude, 64)
-	if err != nil || math.IsNaN(latitude) || math.IsInf(latitude, 0) {
-		fmt.Println("Invalid latitude")
-		return 0.0, 0.0, err
-	}
-	if latitude < -90 || latitude > 90 {
-		fmt.Println("Latitude out of limits (-90° - 90°)")
-		return 0.0, 0.0, fmt.Errorf("Latitude out of limits")
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("failed to parse latitude: %w", err)
 	}
 
 	longitude, err := strconv.ParseFloat(results[0].Longitude, 64)
-	if err != nil || math.IsNaN(longitude) || math.IsInf(longitude, 0) {
-		fmt.Println("Invalid longitude")
-		return 0.0, 0.0, err
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("failed to parse longitude: %w", err)
 	}
-	if longitude < -180 || longitude > 180 {
-		fmt.Println("Longitude out of limits (-180° - 180°)")
-		return 0.0, 0.0, fmt.Errorf("Longitude out of limits")
+
+	err = validateCoordinates(latitude, longitude)
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("failed to validate coordinates: %w", err)
 	}
 
 	return latitude, longitude, nil
+}
+
+func validateCoordinates(latitude, longitude float64) error {
+	if math.IsNaN(latitude) || math.IsInf(latitude, 0) {
+		return fmt.Errorf("invalid latitude")
+	}
+	if latitude < -90 || latitude > 90 {
+		return fmt.Errorf("latitude out of limits")
+	}
+	if math.IsNaN(longitude) || math.IsInf(longitude, 0) {
+		return fmt.Errorf("invalid longitude")
+	}
+	if longitude < -180 || longitude > 180 {
+		return fmt.Errorf("longitude out of limits")
+	}
+	return nil
 }

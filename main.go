@@ -11,8 +11,6 @@ import (
 	"strings"
 )
 
-const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
-
 type LocationResult struct {
 	Latitude  string `json:"lat"`
 	Longitude string `json:"lon"`
@@ -58,11 +56,15 @@ type Weather struct {
 	SkyCondition  int
 }
 
+const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
+
 func main() {
+
 	location := flag.String("l", "", "location for weather")
 	coordinates := flag.String("c", "", "coordinates as lattitude, longitude")
 	var latitude, longitude float64
 	var err error
+
 	flag.Parse()
 	if *location == "" && *coordinates == "" {
 		fmt.Println("Missing location or coordinates")
@@ -83,25 +85,7 @@ func main() {
 
 	} else {
 
-		parts := strings.Split(*coordinates, ",")
-		if len(parts) != 2 {
-			fmt.Println("Coordinates must be in the form lat, long")
-			return
-		}
-
-		latitude, err = strconv.ParseFloat(parts[0], 64)
-		if err != nil {
-			fmt.Println("Invalid latitude")
-			return
-		}
-
-		longitude, err = strconv.ParseFloat(parts[1], 64)
-		if err != nil {
-			fmt.Println("Invalid longitude")
-			return
-		}
-
-		err = validateCoordinates(latitude, longitude)
+		latitude, longitude, err = parseCoordinates(*coordinates)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -209,6 +193,26 @@ func getCoordinates(location string) (float64, float64, error) {
 		return 0.0, 0.0, fmt.Errorf("failed to validate coordinates: %w", err)
 	}
 
+	return latitude, longitude, nil
+}
+
+func parseCoordinates(coordinates string) (float64, float64, error) {
+	parts := strings.Split(coordinates, ",")
+	if len(parts) != 2 {
+		return 0.0, 0.0, fmt.Errorf("coordinates must be in the form lat, long")
+	}
+	latitude, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("invalid latitude %w", err)
+	}
+	longitude, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("invalid longitude %w", err)
+	}
+	err = validateCoordinates(latitude, longitude)
+	if err != nil {
+		return 0.0, 0.0, fmt.Errorf("invalid coordinates: %w", err)
+	}
 	return latitude, longitude, nil
 }
 

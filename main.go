@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const contactInfo = "get-wx/0.1 Spamcountry07@gmail.com" // Change this to the project url if this repo goes public
+const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
 
 type LocationResult struct {
 	Latitude  string `json:"lat"`

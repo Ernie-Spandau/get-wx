@@ -245,7 +245,7 @@ func validateCoordinates(latitude, longitude float64) error {
 func displayWeather(wx Weather) {
 	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", wx.Temperature, wx.TemperatureF)
 	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", wx.Pressure, wx.PressureInHg)
-	fmt.Printf("Current wind direction is: %v°\n", wx.WindDirection)
+	fmt.Printf("Current wind direction is: %03d°\n", wx.WindDirection)
 	fmt.Println("Current wind speed is:", wx.WindSpeed)
 	fmt.Printf("Current humidity is: %d%%\n", wx.Humidity)
 	fmt.Printf("Current sky condition is %d%% cloudy\n", wx.SkyCondition)

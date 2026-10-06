@@ -131,7 +131,6 @@ func getWeather(latitude, longitude float64) (WeatherResponse, error) {
 	if len(weather.Properties.Timeseries) == 0 {
 		return WeatherResponse{}, fmt.Errorf("no forecast data returned")
 	}
-
 	return weather, nil
 }
 

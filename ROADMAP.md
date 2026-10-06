@@ -129,6 +129,12 @@ Possible future work after the core interfaces are stable:
   - Resolve ICAO identifiers to airport/facility names and coordinates
   - Feed resolved coordinates through the existing weather pipeline
   - Support ICAO input across CLI and future TUI/GUI interfaces
+- Aviation Weather Center (AWC) integration as a priority aviation-data source
+  - Evaluate AWC airport/station data as the primary ICAO identifier → facility/name/coordinates source
+  - Add METAR retrieval and both raw and structured presentation
+  - Add TAF retrieval and forecast presentation
+  - Expand later to useful aviation products such as PIREPs/AIREPs, SIGMETs, G-AIRMETs, winds/temperatures aloft, and other AWC data where it fits the application
+  - Reuse resolved ICAO/location data across weather, solar/lunar, AWC, and NOTAM providers
 - NOTAM integration after ICAO/location handling is established
   - Query authoritative NOTAM data by ICAO location
   - Explore geographic NOTAM queries by coordinates and radius

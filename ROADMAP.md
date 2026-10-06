@@ -115,7 +115,10 @@ Possible future work after the core interfaces are stable:
 
 - Multi-day forecasts
 - Multiple saved locations
-- Automatic location support
+- Automatic approximate location via IP geolocation when neither `-l` nor `-c` is supplied
+  - Return latitude/longitude (and a useful location label where available) directly from the geolocation service
+  - Treat IP-derived location as approximate; explicit `-l` and `-c` input always takes precedence
+  - Keep the provider behind the location layer so it can be changed without affecting the weather client
 - Config file support
 - Additional weather details and derived values
 - Release builds for Linux, Windows, and macOS

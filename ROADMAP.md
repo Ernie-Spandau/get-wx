@@ -114,6 +114,14 @@ The first implementation can use the CLI as a data source for Conky before intro
 Possible future work after the core interfaces are stable:
 
 - Multi-day forecasts
+- ICAO location lookup as an additional location source
+  - Resolve ICAO identifiers to airport/facility names and coordinates
+  - Feed resolved coordinates through the existing weather pipeline
+  - Support ICAO input across CLI and future TUI/GUI interfaces
+- NOTAM integration after ICAO/location handling is established
+  - Query authoritative NOTAM data by ICAO location
+  - Explore geographic NOTAM queries by coordinates and radius
+  - Keep NOTAM retrieval/presentation separate from the core weather model
 - Multiple saved locations
 - Automatic approximate location via IP geolocation when neither `-l` nor `-c` is supplied
   - Return latitude/longitude (and a useful location label where available) directly from the geolocation service

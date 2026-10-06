@@ -114,6 +114,17 @@ The first implementation can use the CLI as a data source for Conky before intro
 Possible future work after the core interfaces are stable:
 
 - Multi-day forecasts
+  - Display forecast timestamps in the requested location's local time
+  - Include corresponding Zulu (UTC) times so forecast periods can be correlated with aviation products such as NOTAMs
+- Sun and moon data from MET Norway Sunrise 3.0
+  - Sunrise and sunset times and azimuths
+  - Moonrise and moonset times and azimuths
+  - Moon phase and other useful solar/lunar events where available
+- Location-aware date and time handling
+  - Resolve the requested coordinates to the appropriate timezone rather than assuming the computer's local timezone
+  - Display the current local date/time for the requested location alongside current Zulu (UTC) time
+  - Use the resolved timezone/UTC offset for Sunrise 3.0 requests and DST-correct presentation
+  - Use local and Zulu timestamps consistently across weather, forecasts, and future aviation data
 - ICAO location lookup as an additional location source
   - Resolve ICAO identifiers to airport/facility names and coordinates
   - Feed resolved coordinates through the existing weather pipeline

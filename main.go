@@ -29,8 +29,23 @@ type Instant struct {
 	Details Details `json:"details"`
 }
 
+type ForecastSummary struct {
+	SymbolCode string `json:"symbol_code"`
+}
+
+type ForecastDetails struct {
+	PrecipitationAmount float64 `json:"precipitation_amount"`
+}
+
+type Forecast struct {
+	Summary ForecastSummary `json:"summary"`
+	Details ForecastDetails `json:"details"`
+}
 type Data struct {
-	Instant Instant `json:"instant"`
+	Instant     Instant  `json:"instant"`
+	Next1Hours  Forecast `json:"next_1_hours"`
+	Next6Hours  Forecast `json:"next_6_hours"`
+	Next12Hours Forecast `json:"next_12_hours"`
 }
 
 type Timeseries struct {
@@ -46,14 +61,22 @@ type WeatherResponse struct {
 }
 
 type Weather struct {
-	Temperature   float64
-	TemperatureF  float64
-	Pressure      float64
-	PressureInHg  float64
-	WindDirection int
-	WindSpeed     float64
-	Humidity      int
-	SkyCondition  int
+	Temperature              float64
+	TemperatureF             float64
+	Pressure                 float64
+	PressureInHg             float64
+	WindDirection            int
+	WindSpeed                float64
+	WindSpeedMPH             float64
+	WindSpeedKTS             float64
+	Humidity                 int
+	SkyCondition             int
+	ForecastCondition1H      string
+	ForecastPrecipitation1H  float64
+	ForecastCondition6H      string
+	ForecastPrecipitation6H  float64
+	ForecastCondition12H     string
+	ForecastPrecipitation12H float64
 }
 
 const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
@@ -137,16 +160,27 @@ func getWeather(latitude, longitude float64) (WeatherResponse, error) {
 func convertWeather(weatherResponse WeatherResponse) Weather {
 
 	wxData := weatherResponse.Properties.Timeseries[0].Data.Instant.Details
+	next1HrData := weatherResponse.Properties.Timeseries[0].Data.Next1Hours
+	next6HrData := weatherResponse.Properties.Timeseries[0].Data.Next6Hours
+	next12HrData := weatherResponse.Properties.Timeseries[0].Data.Next12Hours
 
 	wx := Weather{
-		Temperature:   wxData.AirTemperature,
-		TemperatureF:  (wxData.AirTemperature * 9.0 / 5.0) + 32,
-		Pressure:      wxData.AirPressure,
-		PressureInHg:  wxData.AirPressure * 0.02953,
-		WindDirection: int(math.Round(wxData.WindDirection)),
-		WindSpeed:     wxData.WindSpeed,
-		Humidity:      int(math.Round(wxData.Humidity)),
-		SkyCondition:  int(math.Round(wxData.CloudArea)),
+		Temperature:              wxData.AirTemperature,
+		TemperatureF:             (wxData.AirTemperature * 9.0 / 5.0) + 32,
+		Pressure:                 wxData.AirPressure,
+		PressureInHg:             wxData.AirPressure * 0.02953,
+		WindDirection:            int(math.Round(wxData.WindDirection)),
+		WindSpeed:                wxData.WindSpeed,
+		WindSpeedMPH:             wxData.WindSpeed * 2.2369362921,
+		WindSpeedKTS:             wxData.WindSpeed * 1.9438444924,
+		Humidity:                 int(math.Round(wxData.Humidity)),
+		SkyCondition:             int(math.Round(wxData.CloudArea)),
+		ForecastCondition1H:      next1HrData.Summary.SymbolCode,
+		ForecastCondition6H:      next6HrData.Summary.SymbolCode,
+		ForecastCondition12H:     next12HrData.Summary.SymbolCode,
+		ForecastPrecipitation1H:  next1HrData.Details.PrecipitationAmount,
+		ForecastPrecipitation6H:  next6HrData.Details.PrecipitationAmount,
+		ForecastPrecipitation12H: next12HrData.Details.PrecipitationAmount,
 	}
 	return wx
 }
@@ -244,8 +278,21 @@ func validateCoordinates(latitude, longitude float64) error {
 func displayWeather(wx Weather) {
 	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", wx.Temperature, wx.TemperatureF)
 	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", wx.Pressure, wx.PressureInHg)
+	fmt.Printf("Current wind speed is: %.1f m/s, %.1f MpH, %.1f KTS\n", wx.WindSpeed, wx.WindSpeedMPH, wx.WindSpeedKTS)
 	fmt.Printf("Current wind direction is: %03d°\n", wx.WindDirection)
-	fmt.Println("Current wind speed is:", wx.WindSpeed)
 	fmt.Printf("Current humidity is: %d%%\n", wx.Humidity)
-	fmt.Printf("Current sky condition is %d%% cloudy\n", wx.SkyCondition)
+	fmt.Printf("Current sky condition is: %d%% cloudy\n\n", wx.SkyCondition)
+
+	fmt.Println("Forecast for the next hour:")
+	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition1H)
+	fmt.Printf("Preciptitation %.1f in\n\n", wx.ForecastPrecipitation1H/25.4)
+
+	fmt.Println("Forecast for the next 6 hours:")
+	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition6H)
+	fmt.Printf("Preciptitation: %.1f in\n\n", wx.ForecastPrecipitation6H/25.4)
+
+	fmt.Println("Forecast for the next 12 hours:")
+	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition12H)
+	fmt.Printf("Preciptitation: %.1f in\n\n", wx.ForecastPrecipitation12H/25.4)
+
 }

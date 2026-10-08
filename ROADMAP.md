@@ -117,8 +117,13 @@ Possible future work after the core interfaces are stable:
 
 - Multi-day forecasts
 - Explore historical observation sources and local observation storage for actual past-weather graphs (separate from MET Locationforecast predictions)
-  - Display forecast timestamps in the requested location's local time
-  - Include corresponding Zulu (UTC) times so forecast periods can be correlated with aviation products such as NOTAMs
+- Supplement MET forecasts with nearby APRS weather-station observations
+  - Start with aprs.fi weather JSON retrieval using an existing API key
+  - Display station callsign, observation timestamp and age, distance, temperature, wind, pressure, humidity, and precipitation when reported
+  - Clearly distinguish observed station measurements from MET forecasts; account for missing or stale reports
+  - Reuse a weather-provider interface rather than implementing a general-purpose APRS packet monitor or APRS-IS stream client
+  - Consider storing observations for historical graphs once the core data model is stable
+- Display forecast timestamps in the requested location's local time and corresponding Zulu (UTC) time for correlation with aviation products such as NOTAMs
 - Sun and moon data from MET Norway Sunrise 3.0
   - Sunrise and sunset times and azimuths
   - Moonrise and moonset times and azimuths

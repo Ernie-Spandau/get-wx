@@ -346,7 +346,7 @@ func convertWeather(weatherResponse WeatherResponse, elevation float64) Weather 
 }
 
 func displayWeather(wx Weather) {
-	fmt.Printf("Elevation: %.2f m %.2f ft MSL\n", wx.Elevation, wx.ElevationFT)
+	fmt.Printf("Elevation: %.2f m, %.2f ft MSL\n", wx.Elevation, wx.ElevationFT)
 	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", wx.Temperature, wx.TemperatureF)
 	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", wx.Pressure, wx.PressureInHg)
 	fmt.Printf("Current wind speed is: %.1f m/s, %.1f MpH, %.1f KTS\n", wx.WindSpeed, wx.WindSpeedMPH, wx.WindSpeedKTS)

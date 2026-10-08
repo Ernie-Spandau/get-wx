@@ -129,7 +129,7 @@ func main() {
 		return
 	}
 
-	weather, err := getWeather(latitude, longitude)
+	weather, err := getWeather(latitude, longitude, elevation)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -195,14 +195,18 @@ func getCoordinates(location string) (float64, float64, error) {
 
 func parseCoordinates(coordinates string) (float64, float64, error) {
 	parts := strings.Split(coordinates, ",")
+
 	if len(parts) != 2 {
 		return 0.0, 0.0, fmt.Errorf("coordinates must be in the form lat, long")
 	}
-	latitude, err := strconv.ParseFloat(parts[0], 64)
+	latitudeStr := strings.TrimSpace(parts[0])
+	longitudeStr := strings.TrimSpace(parts[1])
+
+	latitude, err := strconv.ParseFloat(latitudeStr, 64)
 	if err != nil {
 		return 0.0, 0.0, fmt.Errorf("invalid latitude %w", err)
 	}
-	longitude, err := strconv.ParseFloat(parts[1], 64)
+	longitude, err := strconv.ParseFloat(longitudeStr, 64)
 	if err != nil {
 		return 0.0, 0.0, fmt.Errorf("invalid longitude %w", err)
 	}
@@ -266,9 +270,9 @@ func getElevation(latitude, longitude float64) (float64, error) {
 	return result.Elevation[0], nil
 }
 
-func getWeather(latitude, longitude float64) (WeatherResponse, error) {
+func getWeather(latitude, longitude, elevation float64) (WeatherResponse, error) {
 
-	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", latitude, longitude)
+	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f&altitude=%.0f", latitude, longitude, elevation)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return WeatherResponse{}, fmt.Errorf("request failed %w", err)

@@ -140,13 +140,16 @@ func main() {
 }
 
 func getCoordinates(location string) (float64, float64, error) {
+
 	baseURL := "https://nominatim.openstreetmap.org/search"
+
 	params := url.Values{}
 	params.Set("q", location)
 	params.Set("format", "json")
 	params.Set("limit", "1")
 	requestURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
 	request, err := http.NewRequest("GET", requestURL, nil)
+
 	if err != nil {
 		return 0.0, 0.0, fmt.Errorf("request failed: %w", err)
 	}
@@ -234,12 +237,15 @@ func validateCoordinates(latitude, longitude float64) error {
 }
 
 func getElevation(latitude, longitude float64) (float64, error) {
+
 	baseURL := "https://api.open-meteo.com/v1/elevation"
+
 	params := url.Values{}
 	params.Set("latitude", strconv.FormatFloat(latitude, 'f', 4, 64))
 	params.Set("longitude", strconv.FormatFloat(longitude, 'f', 4, 64))
 	requestURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
 	request, err := http.NewRequest("GET", requestURL, nil)
+
 	if err != nil {
 		return 0.0, fmt.Errorf("request failed: %w", err)
 	}
@@ -272,7 +278,14 @@ func getElevation(latitude, longitude float64) (float64, error) {
 
 func getWeather(latitude, longitude, elevation float64) (WeatherResponse, error) {
 
-	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f&altitude=%.0f", latitude, longitude, elevation)
+	baseURL := "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+
+	params := url.Values{}
+	params.Set("lat", strconv.FormatFloat(latitude, 'f', 4, 64))
+	params.Set("lon", strconv.FormatFloat(longitude, 'f', 4, 64))
+	params.Set("altitude", strconv.FormatFloat(elevation, 'f', 0, 64))
+	url := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return WeatherResponse{}, fmt.Errorf("request failed %w", err)

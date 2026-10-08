@@ -16,6 +16,10 @@ type LocationResult struct {
 	Longitude string `json:"lon"`
 }
 
+type ElevationResult struct {
+	Elevation []float64 `json:"elevation"`
+}
+
 type Details struct {
 	AirPressure    float64 `json:"air_pressure_at_sea_level"`
 	AirTemperature float64 `json:"air_temperature"`
@@ -41,6 +45,7 @@ type Forecast struct {
 	Summary ForecastSummary `json:"summary"`
 	Details ForecastDetails `json:"details"`
 }
+
 type Data struct {
 	Instant     Instant  `json:"instant"`
 	Next1Hours  Forecast `json:"next_1_hours"`
@@ -77,6 +82,8 @@ type Weather struct {
 	ForecastPrecipitation6H  float64
 	ForecastCondition12H     string
 	ForecastPrecipitation12H float64
+	Elevation                float64
+	ElevationFT              float64
 }
 
 const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
@@ -116,73 +123,20 @@ func main() {
 
 		fmt.Printf("Weather for %.4f, %.4f\n", latitude, longitude)
 	}
+	elevation, err := getElevation(latitude, longitude)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	weather, err := getWeather(latitude, longitude)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	wx := convertWeather(weather)
+
+	wx := convertWeather(weather, elevation)
 	displayWeather(wx)
-}
-
-func getWeather(latitude, longitude float64) (WeatherResponse, error) {
-
-	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", latitude, longitude)
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("request failed %w", err)
-	}
-
-	request.Header.Set("User-Agent", contactInfo)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("response failed: %w", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return WeatherResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
-	}
-
-	var weather WeatherResponse
-	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&weather)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
-	}
-	if len(weather.Properties.Timeseries) == 0 {
-		return WeatherResponse{}, fmt.Errorf("no forecast data returned")
-	}
-	return weather, nil
-}
-
-func convertWeather(weatherResponse WeatherResponse) Weather {
-
-	wxData := weatherResponse.Properties.Timeseries[0].Data.Instant.Details
-	next1HrData := weatherResponse.Properties.Timeseries[0].Data.Next1Hours
-	next6HrData := weatherResponse.Properties.Timeseries[0].Data.Next6Hours
-	next12HrData := weatherResponse.Properties.Timeseries[0].Data.Next12Hours
-
-	wx := Weather{
-		Temperature:              wxData.AirTemperature,
-		TemperatureF:             (wxData.AirTemperature * 9.0 / 5.0) + 32,
-		Pressure:                 wxData.AirPressure,
-		PressureInHg:             wxData.AirPressure * 0.02953,
-		WindDirection:            int(math.Round(wxData.WindDirection)),
-		WindSpeed:                wxData.WindSpeed,
-		WindSpeedMPH:             wxData.WindSpeed * 2.2369362921,
-		WindSpeedKTS:             wxData.WindSpeed * 1.9438444924,
-		Humidity:                 int(math.Round(wxData.Humidity)),
-		SkyCondition:             int(math.Round(wxData.CloudArea)),
-		ForecastCondition1H:      next1HrData.Summary.SymbolCode,
-		ForecastCondition6H:      next6HrData.Summary.SymbolCode,
-		ForecastCondition12H:     next12HrData.Summary.SymbolCode,
-		ForecastPrecipitation1H:  next1HrData.Details.PrecipitationAmount,
-		ForecastPrecipitation6H:  next6HrData.Details.PrecipitationAmount,
-		ForecastPrecipitation12H: next12HrData.Details.PrecipitationAmount,
-	}
-	return wx
 }
 
 func getCoordinates(location string) (float64, float64, error) {
@@ -275,7 +229,107 @@ func validateCoordinates(latitude, longitude float64) error {
 	return nil
 }
 
+func getElevation(latitude, longitude float64) (float64, error) {
+	baseURL := "https://api.open-meteo.com/v1/elevation"
+	params := url.Values{}
+	params.Set("latitude", strconv.FormatFloat(latitude, 'f', 4, 64))
+	params.Set("longitude", strconv.FormatFloat(longitude, 'f', 4, 64))
+	requestURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	request, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return 0.0, fmt.Errorf("request failed: %w", err)
+	}
+	request.Header.Set("User-Agent", contactInfo)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return 0.0, fmt.Errorf("response failed: %w", err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return 0.0, fmt.Errorf("server returned HTTP status: %s", response.Status)
+	}
+
+	var result ElevationResult
+	decoder := json.NewDecoder(response.Body)
+	err = decoder.Decode(&result)
+
+	if err != nil {
+		return 0.0, fmt.Errorf("failed to decode elevation data: %w", err)
+	}
+
+	if len(result.Elevation) == 0 {
+		return 0.0, fmt.Errorf("no elevation data returned")
+	}
+
+	return result.Elevation[0], nil
+}
+
+func getWeather(latitude, longitude float64) (WeatherResponse, error) {
+
+	url := fmt.Sprintf("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", latitude, longitude)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return WeatherResponse{}, fmt.Errorf("request failed %w", err)
+	}
+
+	request.Header.Set("User-Agent", contactInfo)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return WeatherResponse{}, fmt.Errorf("response failed: %w", err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return WeatherResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
+	}
+
+	var weather WeatherResponse
+	decoder := json.NewDecoder(response.Body)
+	err = decoder.Decode(&weather)
+	if err != nil {
+		return WeatherResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
+	}
+	if len(weather.Properties.Timeseries) == 0 {
+		return WeatherResponse{}, fmt.Errorf("no forecast data returned")
+	}
+	return weather, nil
+}
+
+func convertWeather(weatherResponse WeatherResponse, elevation float64) Weather {
+
+	wxData := weatherResponse.Properties.Timeseries[0].Data.Instant.Details
+	next1HrData := weatherResponse.Properties.Timeseries[0].Data.Next1Hours
+	next6HrData := weatherResponse.Properties.Timeseries[0].Data.Next6Hours
+	next12HrData := weatherResponse.Properties.Timeseries[0].Data.Next12Hours
+
+	wx := Weather{
+		Elevation:                elevation,
+		ElevationFT:              elevation * 3.28084,
+		Temperature:              wxData.AirTemperature,
+		TemperatureF:             (wxData.AirTemperature * 9.0 / 5.0) + 32,
+		Pressure:                 wxData.AirPressure,
+		PressureInHg:             wxData.AirPressure * 0.02953,
+		WindDirection:            int(math.Round(wxData.WindDirection)),
+		WindSpeed:                wxData.WindSpeed,
+		WindSpeedMPH:             wxData.WindSpeed * 2.2369362921,
+		WindSpeedKTS:             wxData.WindSpeed * 1.9438444924,
+		Humidity:                 int(math.Round(wxData.Humidity)),
+		SkyCondition:             int(math.Round(wxData.CloudArea)),
+		ForecastCondition1H:      next1HrData.Summary.SymbolCode,
+		ForecastCondition6H:      next6HrData.Summary.SymbolCode,
+		ForecastCondition12H:     next12HrData.Summary.SymbolCode,
+		ForecastPrecipitation1H:  next1HrData.Details.PrecipitationAmount,
+		ForecastPrecipitation6H:  next6HrData.Details.PrecipitationAmount,
+		ForecastPrecipitation12H: next12HrData.Details.PrecipitationAmount,
+	}
+	return wx
+}
+
 func displayWeather(wx Weather) {
+	fmt.Printf("Elevation: %.2f m %.2f ft MSL\n", wx.Elevation, wx.ElevationFT)
 	fmt.Printf("Current temperature is: %.1f°C, %.1f°F\n", wx.Temperature, wx.TemperatureF)
 	fmt.Printf("Current air pressure is %.2fhPa, %.2finHg\n", wx.Pressure, wx.PressureInHg)
 	fmt.Printf("Current wind speed is: %.1f m/s, %.1f MpH, %.1f KTS\n", wx.WindSpeed, wx.WindSpeedMPH, wx.WindSpeedKTS)

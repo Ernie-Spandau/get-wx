@@ -72,6 +72,7 @@ Planned features:
 - Current conditions dashboard
 - Manual refresh
 - Forecast view
+- Forecast trend graphs for temperature, pressure, wind, and humidity, with local/Zulu time labels
 - Keyboard navigation
 - Location selection
 - Non-blocking weather updates
@@ -87,6 +88,7 @@ Planned features:
 
 - Current conditions
 - Short forecast
+- Interactive forecast graphs with selectable variables, time ranges, and timestamp inspection
 - Location management
 - Refresh controls
 - Settings for units and presentation
@@ -114,6 +116,7 @@ The first implementation can use the CLI as a data source for Conky before intro
 Possible future work after the core interfaces are stable:
 
 - Multi-day forecasts
+- Explore historical observation sources and local observation storage for actual past-weather graphs (separate from MET Locationforecast predictions)
   - Display forecast timestamps in the requested location's local time
   - Include corresponding Zulu (UTC) times so forecast periods can be correlated with aviation products such as NOTAMs
 - Sun and moon data from MET Norway Sunrise 3.0

@@ -15,14 +15,12 @@ func displayWeather(wx Weather) {
 
 	fmt.Println("Forecast for the next hour:")
 	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition1H)
-	fmt.Printf("Preciptitation %.1f in\n\n", wx.ForecastPrecipitation1H/25.4)
+	fmt.Printf("Preciptitation %.1f\"\n\n", wx.ForecastPrecipitation1H/25.4)
 
 	fmt.Println("Forecast for the next 6 hours:")
 	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition6H)
-	fmt.Printf("Preciptitation: %.1f in\n\n", wx.ForecastPrecipitation6H/25.4)
+	fmt.Printf("Preciptitation: %.1f\"\n\n", wx.ForecastPrecipitation6H/25.4)
 
 	fmt.Println("Forecast for the next 12 hours:")
 	fmt.Printf("Sky condition: %v\n", wx.ForecastCondition12H)
-	fmt.Printf("Preciptitation: %.1f in\n\n", wx.ForecastPrecipitation12H/25.4)
-
 }

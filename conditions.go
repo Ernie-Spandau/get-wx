@@ -12,6 +12,8 @@ func formatCondition(condition string) string {
 		return "Light rain"
 	case "rain":
 		return "Rain"
+	case "heavyrain":
+		return "Heavy Rain"
 	default:
 		return condition
 	}

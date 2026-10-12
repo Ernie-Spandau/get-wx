@@ -57,8 +57,20 @@ func main() {
 	}
 
 	stations, err := noaa.GetStations(latitude, longitude)
+	if err != nil {
+		fmt.Println("NOAA", err)
+		return
+	}
 
+	observations, err := noaa.GetStationWx(stations)
+	if err != nil {
+		fmt.Println("NOAA:", err)
+		return
+	}
+	fmt.Printf("Temperature is nil: %t\n", observations.Properties.Temperature.Value == nil)
+	if observations.Properties.Temperature.Value != nil {
+		fmt.Println("ORIGINAL IF EXECUTED:", *observations.Properties.Temperature.Value)
+	}
 	wx := convertWeather(forecast, elevation)
 	displayWeather(wx)
-	fmt.Println(stations)
 }

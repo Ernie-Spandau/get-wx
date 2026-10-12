@@ -3,6 +3,7 @@ package met
 import (
 	"encoding/json"
 	"fmt"
+	"get-wx/internal/config"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -50,8 +51,6 @@ type ForecastDetails struct {
 	PrecipitationAmount float64 `json:"precipitation_amount"`
 }
 
-const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
-
 func GetForecast(latitude, longitude, elevation float64) (MetResponse, error) {
 
 	baseURL := "https://api.met.no/weatherapi/locationforecast/2.0/compact"
@@ -67,7 +66,7 @@ func GetForecast(latitude, longitude, elevation float64) (MetResponse, error) {
 		return MetResponse{}, fmt.Errorf("request failed %w", err)
 	}
 
-	request.Header.Set("User-Agent", contactInfo)
+	request.Header.Set("User-Agent", config.ContactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return MetResponse{}, fmt.Errorf("response failed: %w", err)
@@ -79,14 +78,14 @@ func GetForecast(latitude, longitude, elevation float64) (MetResponse, error) {
 		return MetResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
 	}
 
-	var weather MetResponse
+	var forecast MetResponse
 	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&weather)
+	err = decoder.Decode(&forecast)
 	if err != nil {
 		return MetResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
 	}
-	if len(weather.Properties.Timeseries) == 0 {
+	if len(forecast.Properties.Timeseries) == 0 {
 		return MetResponse{}, fmt.Errorf("no forecast data returned")
 	}
-	return weather, nil
+	return forecast, nil
 }

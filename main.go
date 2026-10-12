@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"get-wx/internal/met"
+	"get-wx/internal/noaa"
 )
 
 const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
@@ -31,7 +32,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Weather for %s (%.4f, %.4f)\n", *location, latitude, longitude)
+		fmt.Printf("Forecast weather for %s (%.4f, %.4f)\n", *location, latitude, longitude)
 
 	} else {
 
@@ -41,7 +42,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Weather for %.4f, %.4f\n", latitude, longitude)
+		fmt.Printf("Forecast weather for %.4f, %.4f\n", latitude, longitude)
 	}
 	elevation, err := getElevation(latitude, longitude)
 	if err != nil {
@@ -49,12 +50,15 @@ func main() {
 		return
 	}
 
-	weather, err := met.GetForecast(latitude, longitude, elevation)
+	forecast, err := met.GetForecast(latitude, longitude, elevation)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("MET Norway", err)
 		return
 	}
 
-	wx := convertWeather(weather, elevation)
+	stations, err := noaa.GetStations(latitude, longitude)
+
+	wx := convertWeather(forecast, elevation)
 	displayWeather(wx)
+	fmt.Println(stations)
 }

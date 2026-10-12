@@ -1,60 +1,13 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"get-wx/internal/met"
 	"math"
-	"net/http"
-	"net/url"
-	"strconv"
+	"time"
 )
 
-type Details struct {
-	AirPressure    float64 `json:"air_pressure_at_sea_level"`
-	AirTemperature float64 `json:"air_temperature"`
-	CloudArea      float64 `json:"cloud_area_fraction"`
-	Humidity       float64 `json:"relative_humidity"`
-	WindDirection  float64 `json:"wind_from_direction"`
-	WindSpeed      float64 `json:"wind_speed"`
-}
-
-type Instant struct {
-	Details Details `json:"details"`
-}
-
-type ForecastSummary struct {
-	SymbolCode string `json:"symbol_code"`
-}
-
-type ForecastDetails struct {
-	PrecipitationAmount float64 `json:"precipitation_amount"`
-}
-
-type Forecast struct {
-	Summary ForecastSummary `json:"summary"`
-	Details ForecastDetails `json:"details"`
-}
-
-type Data struct {
-	Instant     Instant  `json:"instant"`
-	Next1Hours  Forecast `json:"next_1_hours"`
-	Next6Hours  Forecast `json:"next_6_hours"`
-	Next12Hours Forecast `json:"next_12_hours"`
-}
-
-type Timeseries struct {
-	Data Data `json:"data"`
-}
-
-type Properties struct {
-	Timeseries []Timeseries `json:"timeseries"`
-}
-
-type WeatherResponse struct {
-	Properties Properties `json:"properties"`
-}
-
 type Weather struct {
+	Updated                  time.Time
 	Temperature              float64
 	TemperatureF             float64
 	Pressure                 float64
@@ -75,53 +28,15 @@ type Weather struct {
 	ElevationFT              float64
 }
 
-func getWeather(latitude, longitude, elevation float64) (WeatherResponse, error) {
-
-	baseURL := "https://api.met.no/weatherapi/locationforecast/2.0/compact"
-
-	params := url.Values{}
-	params.Set("lat", strconv.FormatFloat(latitude, 'f', 4, 64))
-	params.Set("lon", strconv.FormatFloat(longitude, 'f', 4, 64))
-	params.Set("altitude", strconv.FormatFloat(elevation, 'f', 0, 64))
-	url := fmt.Sprintf("%s?%s", baseURL, params.Encode())
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("request failed %w", err)
-	}
-
-	request.Header.Set("User-Agent", contactInfo)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("response failed: %w", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return WeatherResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
-	}
-
-	var weather WeatherResponse
-	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&weather)
-	if err != nil {
-		return WeatherResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
-	}
-	if len(weather.Properties.Timeseries) == 0 {
-		return WeatherResponse{}, fmt.Errorf("no forecast data returned")
-	}
-	return weather, nil
-}
-
-func convertWeather(weatherResponse WeatherResponse, elevation float64) Weather {
-
-	wxData := weatherResponse.Properties.Timeseries[0].Data.Instant.Details
-	next1HrData := weatherResponse.Properties.Timeseries[0].Data.Next1Hours
-	next6HrData := weatherResponse.Properties.Timeseries[0].Data.Next6Hours
-	next12HrData := weatherResponse.Properties.Timeseries[0].Data.Next12Hours
+func convertWeather(metResponse met.MetResponse, elevation float64) Weather {
+	wxUpdatedTime := metResponse.Properties.Meta
+	wxData := metResponse.Properties.Timeseries[0].Data.Instant.Details
+	next1HrData := metResponse.Properties.Timeseries[0].Data.Next1Hours
+	next6HrData := metResponse.Properties.Timeseries[0].Data.Next6Hours
+	next12HrData := metResponse.Properties.Timeseries[0].Data.Next12Hours
 
 	wx := Weather{
+		Updated:                  wxUpdatedTime.Updated,
 		Elevation:                elevation,
 		ElevationFT:              elevation * 3.28084,
 		Temperature:              wxData.AirTemperature,

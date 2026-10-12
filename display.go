@@ -5,6 +5,7 @@ import (
 )
 
 func displayWeather(wx Weather) {
+	fmt.Println("Last Updated:", wx.Updated.Local().Format("2006-01-02 15:04 MST"))
 	fmt.Printf("Elevation: %.2f m, %.2f ft MSL\n", wx.Elevation, wx.ElevationFT)
 	fmt.Printf("Current temperature is: %.1f° C, %.1f° F\n", wx.Temperature, wx.TemperatureF)
 	fmt.Printf("Current air pressure is %.2f hPa, %.2f inHg\n", wx.Pressure, wx.PressureInHg)

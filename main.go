@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"get-wx/internal/met"
 )
 
 const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
@@ -48,7 +49,7 @@ func main() {
 		return
 	}
 
-	weather, err := getWeather(latitude, longitude, elevation)
+	weather, err := met.GetForecast(latitude, longitude, elevation)
 	if err != nil {
 		fmt.Println(err)
 		return

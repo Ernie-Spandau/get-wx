@@ -67,10 +67,7 @@ func main() {
 		fmt.Println("NOAA:", err)
 		return
 	}
-	fmt.Printf("Temperature is nil: %t\n", observations.Properties.Temperature.Value == nil)
-	if observations.Properties.Temperature.Value != nil {
-		fmt.Println("ORIGINAL IF EXECUTED:", *observations.Properties.Temperature.Value)
-	}
 	wx := convertWeather(forecast, elevation)
-	displayWeather(wx)
+	displayObservations(observations)
+	displayForecast(wx)
 }

@@ -39,6 +39,8 @@ type ObservationProperties struct {
 	WindChill                 Measurement  `json:"windChill"`
 	HeatIndex                 Measurement  `json:"heatIndex"`
 	CloudLayers               []CloudLayer `json:"cloudLayers"`
+	StationID                 string       `json:"stationId"`
+	StationName               string       `json:"stationName"`
 }
 type Measurement struct {
 	Value *float64 `json:"value"`
@@ -142,11 +144,11 @@ func GetStationWx(stations FeatureCollection) (ObservationResponse, error) {
 		return ObservationResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
 	}
 
-	var stationWx ObservationResponse
+	var observations ObservationResponse
 	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&stationWx)
+	err = decoder.Decode(&observations)
 	if err != nil {
 		return ObservationResponse{}, fmt.Errorf("failed to decode station data: %w", err)
 	}
-	return stationWx, err
+	return observations, err
 }

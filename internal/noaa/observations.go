@@ -53,37 +53,16 @@ type CloudLayer struct {
 func GetStations(latitude, longitude float64) (FeatureCollection, error) {
 	stationsURL, err := getStationsURL(latitude, longitude)
 	if err != nil {
-		fmt.Println("NOAA", err)
 		return FeatureCollection{}, err
 	}
 
 	url := stationsURL.PointProperties.Stations
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return FeatureCollection{}, fmt.Errorf("request failed %w", err)
-	}
-
-	request.Header.Set("User-Agent", config.ContactInfo)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return FeatureCollection{}, fmt.Errorf("response failed: %w", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return FeatureCollection{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
-	}
-
 	var stations FeatureCollection
-	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&stations)
+	err = fetchJSON(url, &stations)
 	if err != nil {
-		return FeatureCollection{}, fmt.Errorf("failed to decode station data: %w", err)
+		return FeatureCollection{}, fmt.Errorf("failed to fetch JSON: %w", err)
 	}
 
-	// getStationWx(stations)
 	return stations, nil
 }
 
@@ -92,63 +71,51 @@ func getStationsURL(latitude, longitude float64) (NOAAResponse, error) {
 	baseURL := "https://api.weather.gov/points/"
 
 	url := fmt.Sprintf("%s%.4f,%.4f", baseURL, latitude, longitude)
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return NOAAResponse{}, fmt.Errorf("request failed %w", err)
-	}
-
-	request.Header.Set("User-Agent", config.ContactInfo)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return NOAAResponse{}, fmt.Errorf("response failed: %w", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return NOAAResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
-	}
-
 	var stationsURL NOAAResponse
-	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&stationsURL)
+	err := fetchJSON(url, &stationsURL)
 	if err != nil {
-		return NOAAResponse{}, fmt.Errorf("failed to decode weather data: %w", err)
+		return NOAAResponse{}, fmt.Errorf("failed to fetch JSON: %w", err)
 	}
 
 	return stationsURL, nil
 }
 
-func GetStationWx(stations FeatureCollection) (ObservationResponse, error) {
+func GetStationWx(stationID string) (ObservationResponse, error) {
 
-	if len(stations.Features) == 0 {
+	if len(stationID) == 0 {
 		return ObservationResponse{}, fmt.Errorf("Failed to retrieve observation data from NOAA")
 	}
-	stationURL := stations.Features[0].ID + "/observations/latest"
-
-	request, err := http.NewRequest("GET", stationURL, nil)
+	url := stationID + "/observations/latest"
+	var observations ObservationResponse
+	err := fetchJSON(url, &observations)
 	if err != nil {
-		return ObservationResponse{}, fmt.Errorf("request failed %w", err)
+		return ObservationResponse{}, fmt.Errorf("failed to fetch observation data: %w", err)
 	}
 
-	request.Header.Set("User-Agent", config.ContactInfo)
+	return observations, nil
+}
+
+func fetchJSON(url string, target any) error {
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("request failed %w", err)
+	}
+
+	request.Header.Set("Userr-Agent", config.ContactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return ObservationResponse{}, fmt.Errorf("response failed: %w", err)
+		return fmt.Errorf("response failed: %w", err)
 	}
-
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return ObservationResponse{}, fmt.Errorf("server returned HTTP status: %s", response.Status)
+		return fmt.Errorf("server returned HTTP status: %s", response.Status)
 	}
 
-	var observations ObservationResponse
 	decoder := json.NewDecoder(response.Body)
-	err = decoder.Decode(&observations)
+	err = decoder.Decode(target)
 	if err != nil {
-		return ObservationResponse{}, fmt.Errorf("failed to decode station data: %w", err)
+		return fmt.Errorf("failed to decode JSON: %w", err)
 	}
-	return observations, err
+	return nil
 }

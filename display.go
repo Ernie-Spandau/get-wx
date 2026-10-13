@@ -52,6 +52,6 @@ func displayObservations(observations noaa.ObservationResponse) {
 	displayMeasurement("MinTemperatureLast24Hours", obs.MinTemperatureLast24Hours.Value)
 	displayMeasurement("PrecipitationLast3Hours", obs.PrecipitationLast3Hours.Value)
 	displayMeasurement("RelativeHumidity", obs.RelativeHumidity.Value)
-	displayMeasurement("WindChill", obs.WindSpeed.Value)
+	displayMeasurement("WindChill", obs.WindChill.Value)
 	displayMeasurement("HeatIndex", obs.HeatIndex.Value)
 }

@@ -62,7 +62,12 @@ func main() {
 		return
 	}
 
-	observations, err := noaa.GetStationWx(stations)
+	if len(stations.Features) == 0 {
+		fmt.Println("NOAA returned no observation stations")
+		return
+	}
+	observations, err := noaa.GetStationWx(stations.Features[0].ID)
+
 	if err != nil {
 		fmt.Println("NOAA:", err)
 		return

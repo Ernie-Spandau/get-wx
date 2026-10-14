@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"get-wx/internal/config"
 	"math"
 	"net/http"
 	"net/url"
@@ -34,7 +35,7 @@ func getCoordinates(location string) (float64, float64, error) {
 		return 0.0, 0.0, fmt.Errorf("request failed: %w", err)
 	}
 
-	request.Header.Set("User-Agent", contactInfo)
+	request.Header.Set("User-Agent", config.ContactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return 0.0, 0.0, fmt.Errorf("response failed: %w", err)
@@ -129,7 +130,7 @@ func getElevation(latitude, longitude float64) (float64, error) {
 	if err != nil {
 		return 0.0, fmt.Errorf("request failed: %w", err)
 	}
-	request.Header.Set("User-Agent", contactInfo)
+	request.Header.Set("User-Agent", config.ContactInfo)
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return 0.0, fmt.Errorf("response failed: %w", err)

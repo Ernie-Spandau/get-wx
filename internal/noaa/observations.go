@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"get-wx/internal/config"
 	"net/http"
+	"time"
 )
 
 type NOAAResponse struct {
@@ -13,6 +14,7 @@ type NOAAResponse struct {
 type Properties struct {
 	Stations string `json:"observationStations"`
 }
+
 type FeatureCollection struct {
 	Features []Features `json:"features"`
 }
@@ -41,6 +43,7 @@ type ObservationProperties struct {
 	CloudLayers               []CloudLayer `json:"cloudLayers"`
 	StationID                 string       `json:"stationId"`
 	StationName               string       `json:"stationName"`
+	Timestamp                 time.Time    `json:"timestamp"`
 }
 type Measurement struct {
 	Value *float64 `json:"value"`

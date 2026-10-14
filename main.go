@@ -7,8 +7,6 @@ import (
 	"get-wx/internal/noaa"
 )
 
-const contactInfo = "get-wx/0.1 https://github.com/Ernie-Spandau/get-wx"
-
 func main() {
 
 	location := flag.String("l", "", "location for weather")
@@ -32,7 +30,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Forecast weather for %s (%.4f, %.4f)\n", *location, latitude, longitude)
+		fmt.Printf("Weather for %s (%.4f, %.4f)\n", *location, latitude, longitude)
 
 	} else {
 
@@ -42,8 +40,9 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Forecast weather for %.4f, %.4f\n", latitude, longitude)
+		fmt.Printf("Weather for %.4f, %.4f\n", latitude, longitude)
 	}
+
 	elevation, err := getElevation(latitude, longitude)
 	if err != nil {
 		fmt.Println(err)
@@ -61,18 +60,19 @@ func main() {
 		fmt.Println("NOAA", err)
 		return
 	}
-
 	if len(stations.Features) == 0 {
 		fmt.Println("NOAA returned no observation stations")
 		return
 	}
-	observations, err := noaa.GetStationWx(stations.Features[0].ID)
 
+	observations, err := noaa.GetStationWx(stations.Features[0].ID)
 	if err != nil {
 		fmt.Println("NOAA:", err)
 		return
 	}
-	wx := convertWeather(forecast, elevation)
+
+	wx := met.ConvertWeather(forecast, elevation)
+
 	displayObservations(observations)
 	displayForecast(wx)
 }
